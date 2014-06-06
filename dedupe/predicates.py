@@ -16,7 +16,7 @@ def wholeFieldPredicate(field):
     """return the whole field"""
 
     if field:
-        return (field, )
+        return (str(field), )
     else:
         return ()
 
