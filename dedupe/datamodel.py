@@ -10,12 +10,14 @@ import dedupe.blocking
 from dedupe.distance.affinegap import normalizedAffineGapDistance
 from dedupe.distance.haversine import compareLatLong
 from dedupe.distance.categorical import CategoricalComparator
+from numpy import nan
 
 valid_fields = ['String',
                 'ShortString',
                 'LatLong',
                 'Set',
                 'Source',
+                'Exact',
                 'Text',
                 'Categorical',
                 'Custom',
@@ -43,7 +45,9 @@ class DataModel(dict) :
 
             if definition['type'] == 'LatLong' :
                 field_model[field] = LatLongType(field, definition)
-                
+
+            if definition['type'] == 'Exact' :
+                field_model[field] = ExactType(field, definition)
                 
             elif definition['type'] == 'String' :
                 field_model[field] = StringType(field, definition)
@@ -137,6 +141,7 @@ class DataModel(dict) :
         self.field_comparators = OrderedDict([(field, fields[field].comparator)
                                               for field in fields
                                               if fields[field].comparator])
+        print self.field_comparators
 
     
         self.missing_field_indices = [i for i, (field, definition) 
@@ -154,7 +159,6 @@ class DataModel(dict) :
                                                  len(definition.higher_dummies)))
 
 
-
 class FieldType(object) :
     weight = 0
     comparator = None
@@ -170,6 +174,20 @@ class FieldType(object) :
 
         self.predicates = [dedupe.blocking.SimplePredicate(pred, field) 
                            for pred in self._predicate_functions]
+
+class ExactType(FieldType) :
+    @staticmethod
+    def comparator(field_1, field_2) :
+        if field_1 and field_2 :
+            if field_1 == field_2 :
+                return 1
+            else:
+                return 0
+        else :
+            return nan
+
+    type = "ExactMatch"
+    _predicate_functions = (dedupe.predicates.wholeFieldPredicate,)
 
 class ShortStringType(FieldType) :
     comparator = normalizedAffineGapDistance
