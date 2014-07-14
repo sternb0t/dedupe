@@ -66,7 +66,7 @@ class Matching(object):
                          to 2.
         """
 
-
+        logger.info("thresholdBlocks: running core.scoreDuplicates")
         probability = core.scoreDuplicates(self._blockedPairs(blocks), 
                                            self.data_model, 
                                            self.num_processes)['score']
@@ -115,7 +115,8 @@ class Matching(object):
         cluster_threshold = threshold * 0.7
 
         candidate_records = self._blockedPairs(blocks)
-        
+
+        logger.info("matchBlocks: running core.scoreDuplicates")
         self.matches = core.scoreDuplicates(candidate_records,
                                             self.data_model,
                                             self.num_processes,
@@ -192,6 +193,7 @@ class DedupeMatching(Matching) :
                              
         """
         blocked_pairs = self._blockData(data)
+        logger.info("match: running self.matchBlocks")
         return self.matchBlocks(blocked_pairs, threshold)
 
     def threshold(self, data, recall_weight = 1.5) : # pragma : no cover
@@ -211,8 +213,8 @@ class DedupeMatching(Matching) :
                          to 2.
         """
 
-    
         blocked_pairs = self._blockData(data)
+        logger.info("threshold: running self.thresholdBlocks")
         return self.thresholdBlocks(blocked_pairs, recall_weight)
 
     def _blockedPairs(self, blocks) :
@@ -227,7 +229,7 @@ class DedupeMatching(Matching) :
         block, blocks = core.peek(blocks)
         self._checkBlock(block)
 
-	combinations = itertools.combinations
+        combinations = itertools.combinations
 
         pairs = (combinations(block, 2) for block in blocks)
 

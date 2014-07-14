@@ -3,10 +3,12 @@ import weakref
 import threading
 import warnings
 
-DISABLE_MULTIPROCESSING = True
+# could be refactored as a run-time config
+DISABLE_MULTIPROCESSING = False
 
 if DISABLE_MULTIPROCESSING:
     warnings.warn("Multiprocessing has been actively disabled with DISABLE_MULTIPROCESSING switch.")
+    print "using dummy Multiprocessing"
 
     if not hasattr(threading.current_thread(), "_children"):
         threading.current_thread()._children = weakref.WeakKeyDictionary()
@@ -23,12 +25,14 @@ else:
         warnings.warn("NumPy linked against 'Accelerate.framework'. "
                       "Multiprocessing will be disabled."
                       " http://mail.scipy.org/pipermail/numpy-discussion/2012-August/063589.html")
+        print "using dummy Multiprocessing"
 
         if not hasattr(threading.current_thread(), "_children"):
             threading.current_thread()._children = weakref.WeakKeyDictionary()
         from multiprocessing.dummy import Process, Pool, Queue
         SimpleQueue = Queue
     else :
+        print "using real Multiprocessing"
         from multiprocessing import Process, Pool, Queue
         from multiprocessing.queues import SimpleQueue
 

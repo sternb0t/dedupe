@@ -6,9 +6,12 @@ import warnings
 import numpy
 import collections
 import time
+import logging
 
 import dedupe.backport as backport
 import dedupe.lr as lr
+
+logger = logging.getLogger(__name__)
 
 def randomPairsWithReplacement(n_records, sample_size) :
     # If the population is very large relative to the sample
@@ -227,26 +230,37 @@ def mergeScores(score_queue, result_queue, stop_signals) :
     result_queue.put(scored_pairs)
 
 def scoreDuplicates(records, data_model, num_processes=1, threshold=0) :
+
+    logger.info("scoreDuplicates: getting record_pairs_queue")
     record_pairs_queue = backport.SimpleQueue()
+
+    logger.info("scoreDuplicates: getting score_queue")
     score_queue =  backport.SimpleQueue()
+
+    logger.info("scoreDuplicates: getting result_queue")
     result_queue = backport.SimpleQueue()
 
     n_map_processes = max(num_processes-1, 1)
-    score_records = ScoreRecords(data_model, threshold) 
+    score_records = ScoreRecords(data_model, threshold)
+    logger.info("scoreDuplicates: create %s processes", n_map_processes)
     map_processes = [backport.Process(target=score_records,
                                       args=(record_pairs_queue,
                                             score_queue))
                      for _ in xrange(n_map_processes)]
+    logger.info("scoreDuplicates: starting %s processes", n_map_processes)
     [process.start() for process in map_processes]
 
     reduce_process = backport.Process(target=mergeScores,
                                       args=(score_queue,
                                             result_queue,
                                             n_map_processes))
+    logger.info("scoreDuplicates: starting reduce process")
     reduce_process.start()
 
+    logger.info("scoreDuplicates: filling queue")
     fillQueue(record_pairs_queue, records, n_map_processes)
 
+    logger.info("scoreDuplicates: getting result_queue")
     scored_pairs = result_queue.get()
 
     return scored_pairs
