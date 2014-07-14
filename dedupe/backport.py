@@ -3,23 +3,34 @@ import weakref
 import threading
 import warnings
 
-# Deal with Mac OS X issuse
-config_info = str([value for key, value in
-                   numpy.__config__.__dict__.iteritems()
-                   if key.endswith("_info")]).lower()
+DISABLE_MULTIPROCESSING = True
 
-if "accelerate" in config_info or "veclib" in config_info :
-    warnings.warn("NumPy linked against 'Accelerate.framework'. "
-                  "Multiprocessing will be disabled."
-                  " http://mail.scipy.org/pipermail/numpy-discussion/2012-August/063589.html")
-        
-    if not hasattr(threading.current_thread(), "_children"): 
+if DISABLE_MULTIPROCESSING:
+    warnings.warn("Multiprocessing has been actively disabled with DISABLE_MULTIPROCESSING switch.")
+
+    if not hasattr(threading.current_thread(), "_children"):
         threading.current_thread()._children = weakref.WeakKeyDictionary()
     from multiprocessing.dummy import Process, Pool, Queue
     SimpleQueue = Queue
-else :
-    from multiprocessing import Process, Pool, Queue
-    from multiprocessing.queues import SimpleQueue
+
+else:
+    # Deal with Mac OS X issue
+    config_info = str([value for key, value in
+                       numpy.__config__.__dict__.iteritems()
+                       if key.endswith("_info")]).lower()
+
+    if "accelerate" in config_info or "veclib" in config_info :
+        warnings.warn("NumPy linked against 'Accelerate.framework'. "
+                      "Multiprocessing will be disabled."
+                      " http://mail.scipy.org/pipermail/numpy-discussion/2012-August/063589.html")
+
+        if not hasattr(threading.current_thread(), "_children"):
+            threading.current_thread()._children = weakref.WeakKeyDictionary()
+        from multiprocessing.dummy import Process, Pool, Queue
+        SimpleQueue = Queue
+    else :
+        from multiprocessing import Process, Pool, Queue
+        from multiprocessing.queues import SimpleQueue
 
 
 ## {{{ http://code.activestate.com/recipes/576693/ (r9)
